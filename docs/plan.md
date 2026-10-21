@@ -49,16 +49,30 @@ Flow: draft in `opencode/plans/` → on approval, project repo created and plan 
 | Secrets | `~/.config/local-ai/` (outside repo) | Repo stays committable; `.example` templates tracked. |
 | Testing | Modular shell test suite in `tests/` | Unit + integration + functional layers; skips gracefully for unconfigured services. Re-runnable for regression/sanity. |
 
-## Model Roster (16GB RAM / CPU)
+## Model Roster (16GB RAM / CPU) — hybrid routing
 
-| Ollama Model | Role | ~RAM |
-|--------------|------|------|
-| `qwen3:8b` | Main reasoning, research, tool calling | 5.0 GB |
-| `qwen3:4b` | Fast classification, bulk file ops | 2.5 GB |
-| `moondream` | Photo description / vision tasks | 1.7 GB |
-| `nomic-embed-text` | Semantic search, RAG over notes/docs | 0.3 GB |
+| Ollama Model | Class | Role | ~RAM |
+|--------------|-------|------|------|
+| `qwen3:8b` | thinking | Orchestration, research, analysis — anything requiring reasoning | 5.0 GB |
+| `qwen3:4b` | fast | Mechanical classification, bulk file operations | 2.5 GB |
+| `moondream` | vision | Photo description / vision tasks | 1.7 GB |
+| `nomic-embed-text` | embedding | Semantic search, RAG over notes/docs | 0.3 GB |
 
 > One large model loaded at a time (Ollama unloads after ~5min idle).
+
+### Hybrid routing via agents (`config/agents/`)
+
+Mechanical work must not wait on slow reasoning. Agents bind a task to a model class:
+
+| Agent | Mode | Model | Responsibility |
+|-------|------|-------|----------------|
+| `assistant` | primary | `qwen3:8b` (thinking) | Orchestrate, research, analyze; delegate bulk work via Task tool |
+| `researcher` | subagent | `qwen3:8b` (thinking) | Web research → sourced summary |
+| `analyst` | subagent | `qwen3:8b` (thinking) | Portfolio risk report |
+| `file-organizer` | all | `qwen3:4b` (fast) | Mechanical sorting (downloads/photos/music) |
+
+Rule of thumb: **reasoning/research/analysis/orchestration → thinking model; repetition/classification/bulk ops → fast model.**
+Scripts pick the agent explicitly (`--agent file-organizer` vs `--agent assistant`).
 
 ## How It Works (flow — goes into README)
 
@@ -129,6 +143,11 @@ Scripts stay as thin entry points that invoke `opencode run` — the skill suppl
 │   └── CHANGELOG.md                     # plan revisions
 ├── config/
 │   ├── opencode.json
+│   ├── agents/                          # hybrid model routing (symlinked)
+│   │   ├── assistant.md
+│   │   ├── researcher.md
+│   │   ├── analyst.md
+│   │   └── file-organizer.md
 │   ├── modelfiles/
 │   │   └── organizer
 │   └── mcp/
@@ -188,6 +207,14 @@ Scripts stay as thin entry points that invoke `opencode run` — the skill suppl
 - Functional tests operate only on `tests/fixtures/` — never touch real user data
 - New features → new test file; modified behavior → update the existing test
 - Full suite re-run = sanity/regression check after any change
+
+**Committability & privacy rules:**
+- The repo contains **no personal paths, usernames, tokens, or local state**. All paths are
+  relative or `~`-based; the clone location is irrelevant.
+- Anything machine-specific lives in `<repo>/.local/` (gitignored) or `~/.config/local-ai/`.
+- Secrets are gitignored with `.example` templates committed; generated reports → `reports/`.
+- `link-config.sh` stashes any stray local config into `<repo>/.local/stashed/` instead of
+  leaving it outside the project.
 
 ## PREREQUISITES.md scope (manual only)
 
@@ -278,3 +305,4 @@ Excluded (OpenCode/setup handles): Ollama status, model pulls, package installs,
 | 2026-10-21 | Initial draft |
 | 2026-10-21 | Restructured: project → `~/Projects/ai-assistant/`; `opencode/plans/` = generic drafts; prerequisites trimmed to manual-only |
 | 2026-10-21 | Added: skills phase (2.5) for determinism; modular test plan (Phase 9 + `tests/` layout); flow diagram spec for README |
+| 2026-10-21 | Added hybrid model routing via agents (`config/agents/`); privacy/committability rules; `.local/` ignored workspace |

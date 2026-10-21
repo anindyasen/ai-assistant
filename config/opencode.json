@@ -1,18 +1,35 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "model": "ollama/qwen3:8b",
+  "small_model": "ollama/llama3.2:latest",
+  "default_agent": "assistant",
   "provider": {
     "ollama": {
-      "npm": "@ai-sdk/ollama",
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama (local)",
       "options": {
-        "baseURL": "http://localhost:11434/api"
+        "baseURL": "http://localhost:11434/v1",
+        "timeout": 1800000,
+        "chunkTimeout": false
       },
       "models": {
         "qwen3:8b": {
-          "name": "Qwen3 8B (main)"
+          "name": "Qwen3 8B (thinking)",
+          "options": {
+            "num_ctx": 32768
+          }
         },
         "qwen3:4b": {
-          "name": "Qwen3 4B (fast)"
+          "name": "Qwen3 4B (thinking, fast)",
+          "options": {
+            "num_ctx": 16384
+          }
+        },
+        "llama3.2:latest": {
+          "name": "Llama 3.2 (fast, no-think)",
+          "options": {
+            "num_ctx": 8192
+          }
         },
         "moondream": {
           "name": "Moondream (vision)"
@@ -38,6 +55,9 @@
       "ffprobe *": "allow",
       "stat *": "allow",
       "pwd": "allow",
+      "date": "allow",
+      "du *": "allow",
+      "df *": "allow",
       "which *": "allow",
       "echo *": "allow",
       "git status*": "allow",
@@ -57,7 +77,8 @@
     "websearch": "allow",
     "external_directory": {
       "*": "ask",
-      "~/*": "ask"
+      "~/*": "ask",
+      "/tmp/*": "allow"
     }
   },
   "mcp": {
@@ -67,11 +88,8 @@
       "command": [
         "npx", "-y", "@notionhq/notion-mcp-server"
       ],
-      "environment": [
-        "NOTION_API_KEY="
-      ],
-      "environmentPaths": {
-        "NOTION_API_KEY": "~/.config/local-ai/notion.env"
+      "environment": {
+        "NOTION_TOKEN": "{env:NOTION_TOKEN}"
       }
     },
     "gmail": {
@@ -80,9 +98,9 @@
       "command": [
         "npx", "-y", "@gongrzhe/server-gmail-autoauth-mcp"
       ],
-      "environmentPaths": {
-        "GMAIL_CREDENTIALS_PATH": "~/.config/local-ai/gmail/credentials.json",
-        "GMAIL_TOKEN_PATH": "~/.config/local-ai/gmail/token.json"
+      "environment": {
+        "GMAIL_CREDENTIALS_PATH": "{env:HOME}/.config/local-ai/gmail/credentials.json",
+        "GMAIL_TOKEN_PATH": "{env:HOME}/.config/local-ai/gmail/token.json"
       }
     }
   }

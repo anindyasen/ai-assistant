@@ -1,22 +1,55 @@
-# Secrets — never commit
+# ---------------------------------------------------------------------------
+# .gitignore — keep personal / local / generated files OUT of the repo.
+# Rule of thumb: everything committable is generic and machine-independent.
+# Anything with a real path, token, username, or runtime output stays ignored.
+# ---------------------------------------------------------------------------
+
+# --- Secrets & credentials (never commit) ---
 *.env
 !*.env.example
 config/mcp/*.env
 !config/mcp/*.env.example
-
 credentials.json
 token.json
 *.pem
 *.key
+*_token.json
 
-# OS / editor
+# --- Local runtime state (all inside the project, all ignored) ---
+# Use these dirs for anything machine-specific so the repo stays clean.
+.local/
+.local/**/*
+state/
+state/**/*
+cache/
+cache/**/*
+*.local.json
+config/opencode.local.json
+config/*.local.*
+
+# --- Python virtualenv (project-local via uv) ---
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# --- Generated reports / outputs ---
+reports/
+reports/**/*
+out/
+out/**/*
+*.generated.md
+
+# --- Test artifacts (functional tests write here) ---
+tests/fixtures/**/__output/
+tests/tmp/
+
+# --- OS / editor noise ---
 .DS_Store
+Thumbs.db
 *.swp
+*.swo
 .idea/
 .vscode/
-
-# Local overrides
-config/opencode.local.json
-
-# Test artifacts (functional tests write here)
-tests/fixtures/**/__output/
+*.bak
+*.bak.*

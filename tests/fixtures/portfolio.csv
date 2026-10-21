@@ -1,0 +1,5 @@
+symbol,name,quantity,avg_price,current_price,currency
+RELIANCE,Reliance Industries,10,2400,2600,INR
+TCS,Tata Consultancy,5,3500,2900,INR
+HDFCBANK,HDFC Bank,20,1500,1520,INR
+INFY,Infosys,8,1400,1600,INR

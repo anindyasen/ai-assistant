@@ -13,8 +13,8 @@ if [ ! -d "$TARGET" ]; then
 fi
 
 exec opencode run \
-  --model ollama/qwen3:4b \
-  --mode build \
+  --agent file-organizer \
+  --auto \
   "Organize photos in: $TARGET $EXTRA_ARGS
 
 Steps:

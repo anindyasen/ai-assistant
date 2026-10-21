@@ -3,9 +3,11 @@
 # Usage: morning-brief
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 exec opencode run \
-  --model ollama/qwen3:8b \
-  --mode build \
+  --agent assistant \
+  --auto \
   "Morning briefing. Produce a concise report in this order:
 
 1. EMAIL — via the Gmail MCP tool: list unread from the last 24h, group into
@@ -16,7 +18,7 @@ exec opencode run \
    - extract open tasks / TODOs from them
    If the vault path doesn't exist, say so and skip.
 3. PORTFOLIO — if ~/Finance/portfolio.csv exists, run:
-   ~/Projects/ai-assistant/scripts/portfolio-report
+   $SCRIPT_DIR/portfolio-report
    and include only the summary lines. Otherwise skip.
 4. FILES — run: ls -lt ~/Downloads | head -15
    Flag anything older than 7 days that still looks unsorted.

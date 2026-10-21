@@ -7,27 +7,26 @@ TARGET="${1:-$HOME/Downloads}"
 shift || true
 EXTRA_ARGS="$*"
 
+# Base for destination folders. Override for testing (defaults to $HOME).
+DEST_BASE="${AI_ASSISTANT_HOME:-$HOME}"
+
 if [ ! -d "$TARGET" ]; then
   echo "Not a directory: $TARGET" >&2
   exit 1
 fi
 
 exec opencode run \
-  --model ollama/qwen3:4b \
-  --mode build \
-  "Sort files in: $TARGET $EXTRA_ARGS
+  --agent file-organizer \
+  --auto \
+  "Act as file-organizer. Sort files in: $TARGET $EXTRA_ARGS
 
-Destinations:
-- Documents (pdf, docx, odt, txt, md)  -> ~/Documents/sorted/
-- Images (png, jpg, svg, gif, webp)    -> ~/Pictures/sorted/
-- Installers (AppImage, deb, run, msi) -> ~/Applications/
-- Archives (zip, tar, 7z)              -> ~/Downloads/archives/  (extract only if asked)
-- Code / data (py, js, json, csv, ipynb)-> ~/Projects/downloads/
-- Media (mp4, mkv, mp3, flac)          -> ~/Media/sorted/
-- Unknown                              -> ~/Downloads/unsorted/
+Destinations (root: $DEST_BASE):
+- Documents (pdf, docx, odt, txt, md)  -> $DEST_BASE/Documents/sorted/
+- Images (png, jpg, svg, gif, webp)    -> $DEST_BASE/Pictures/sorted/
+- Installers (AppImage, deb, run, msi) -> $DEST_BASE/Applications/
+- Archives (zip, tar, 7z)              -> $DEST_BASE/Downloads/archives/  (extract only if asked)
+- Code / data (py, js, json, csv, ipynb)-> $DEST_BASE/Projects/downloads/
+- Media (mp4, mkv, mp3, flac)          -> $DEST_BASE/Media/sorted/
+- Unknown                              -> $DEST_BASE/Downloads/unsorted/
 
-Rules:
-1. Use file(1) to confirm type when extension is missing or misleading.
-2. For PDFs, read the first page and rename to a meaningful name.
-3. Never delete. Skip files modified in the last 24h.
-4. Print a summary of what moved where."
+Use the bash tool. Run mkdir -p for each destination needed, then mv each file. Use file(1) to confirm type when extension is missing or misleading. For PDFs read first page to rename meaningfully. Never delete. Skip files modified in the last 24h. Print a summary of what moved where."

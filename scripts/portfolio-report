@@ -15,8 +15,8 @@ fi
 mkdir -p "$REPORT_DIR"
 
 exec opencode run \
-  --model ollama/qwen3:8b \
-  --mode build \
+  --agent assistant \
+  --auto \
   "Portfolio analysis. Input: $CSV (columns: symbol,qty,avg_price).
 
 Steps:

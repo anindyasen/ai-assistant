@@ -21,13 +21,15 @@ No OpenWebUI, no extra daemons.
                               ▼
   ┌──────────────────────────────────────────────────────────────┐
   │  OPENCODE AGENT                                               │
-  │  Loads: config/opencode.json (model, permissions, MCP)        │
+  │  Loads: config/opencode.json (provider, permissions, MCP)     │
+  │  Loads: config/agents/*.md   → routes task to the right model │
   │  Loads: skill matching the task → SOP rules injected          │
   └───────────────────────────┬──────────────────────────────────┘
                               ▼
   ┌──────────────────────────────────────────────────────────────┐
-  │  MODEL (Ollama: qwen3:8b or :4b)                              │
-  │  Reads SOP + context → decides tool calls                     │
+  │  HYBRID MODEL ROUTING (see "Agents & models" below)           │
+  │  thinking  (qwen3:8b) → reason, research, analyze, orchestrate│
+  │  fast      (qwen3:4b) → mechanical file/bulk work             │
   └───────────────────────────┬──────────────────────────────────┘
                               ▼
         ┌─────────────────────┼─────────────────────┐
@@ -58,25 +60,85 @@ No OpenWebUI, no extra daemons.
 Scripts are thin entry points; the **skill** supplies the rules (naming, layout, safety),
 so interactive chat and automation behave identically.
 
+## Agents & models (hybrid routing)
+
+The assistant uses **two model classes** so slow reasoning never stalls mechanical work:
+
+| Agent | Mode | Model | Used for |
+|-------|------|-------|----------|
+| `assistant` | primary | `qwen3:8b` (thinking) | Orchestration, research, analysis — anything needing reasoning |
+| `researcher` | subagent | `qwen3:8b` (thinking) | Web research with sourced summaries |
+| `analyst` | subagent | `qwen3:8b` (thinking) | Portfolio risk analysis |
+| `file-organizer` | all | `qwen3:4b` (fast) | Mechanical sorting of downloads/photos/music |
+
+The `assistant` **delegates** bulk file work to `file-organizer` via the Task tool, so the
+fast model does the repetitive work while the thinking model only plans and reviews.
+
+Scripts select the agent explicitly:
+`scripts/organize-*` → `--agent file-organizer`; `scripts/morning-brief`,
+`scripts/portfolio-report` → `--agent assistant`.
+
+Agent definitions live in `config/agents/*.md` (committed) and are symlinked to
+`~/.config/opencode/agents/` by `scripts/setup/link-config.sh`.
+
 ## Quick start
 
+### 1. Clone anywhere
+
 ```bash
-# 1. Complete manual prerequisites
-#    (Notion key, Gmail OAuth, portfolio CSV — see docs/PREREQUISITES.md)
-
-# 2. One-time setup (deps + models + config link)
-./scripts/setup/install-deps.sh
-./scripts/setup/pull-models.sh
-./scripts/setup/link-config.sh
-
-# 3. Use
-opencode                    # interactive TUI
-./scripts/morning-brief     # daily briefing
-./scripts/organize-downloads
-
-# 4. Test (sanity / regression)
-./tests/run-all.sh
+git clone https://github.com/anindyasen/ai-assistant.git
+cd ai-assistant
 ```
+
+Nothing is hardcoded to a specific user or location: all paths are relative or use
+`~`, and every local/secret file is gitignored. Clone it wherever you like.
+
+### 2. One-time setup
+
+```bash
+./scripts/setup/install-deps.sh   # system tools + project-local Python .venv (uv)
+./scripts/setup/pull-models.sh    # pulls the Ollama models
+./scripts/setup/link-config.sh    # symlinks config + agents into ~/.config/opencode/
+```
+
+`install-deps.sh` may ask for your `sudo` password (it installs a few system tools).
+`link-config.sh` keeps the repo as the single source of truth — edits here take effect
+immediately, and any stray local config is stashed inside the repo's ignored `.local/`.
+
+### 3. Manual prerequisites (optional services)
+
+Notion, Gmail, and a portfolio CSV require one-time manual steps — see
+[docs/PREREQUISITES.md](docs/PREREQUISITES.md). Everything else works without them;
+the assistant will simply skip unconfigured services.
+
+### 4. Use
+
+```bash
+opencode                      # interactive TUI (Tab switches agents)
+./scripts/morning-brief       # daily briefing (thinking model)
+./scripts/organize-downloads  # sort ~/Downloads (fast model)
+./scripts/organize-photos     # sort photos into YYYY/MM (fast model)
+./scripts/portfolio-report    # portfolio risk report (thinking model)
+```
+
+### 5. Verify
+
+```bash
+./tests/run-all.sh            # full suite; functional tests use fixtures only
+```
+
+### Where local & secret files live
+
+| Kind | Location | Committed? |
+|------|----------|-----------|
+| Config + agents | `config/` (symlinked into `~/.config/opencode/`) | yes |
+| Secrets / tokens | `~/.config/local-ai/` and `config/mcp/*.env` | no (gitignored) |
+| Local overrides / stashes | `<repo>/.local/` | no (gitignored) |
+| Generated reports | `<repo>/reports/` | no (gitignored) |
+| Python venv | `<repo>/.venv/` | no (gitignored) |
+
+Everything machine-specific stays inside the repo (ignored) or in `~/.config/local-ai/`,
+so the repository never carries personal paths, tokens, or local state.
 
 ## Repository layout
 
@@ -86,21 +148,27 @@ opencode                    # interactive TUI
 | `docs/PREREQUISITES.md` | Manual one-time steps |
 | `docs/CHANGELOG.md` | Plan/project revisions |
 | `config/opencode.json` | OpenCode config (symlinked to `~/.config/opencode/`) |
+| `config/agents/*.md` | Agent definitions — hybrid model routing (symlinked to `~/.config/opencode/agents/`) |
 | `config/modelfiles/` | Ollama Modelfiles (personas) |
 | `config/mcp/*.example` | Secrets templates (real files in `~/.config/local-ai/`, gitignored) |
 | `skills/*/SKILL.md` | Task SOPs — the determinism layer |
 | `scripts/` | Automation entry points |
 | `scripts/setup/` | One-time install helpers |
 | `tests/` | Modular sanity/regression suite |
+| `.local/` | Local stashes/overrides (gitignored, never committed) |
 
 ## Models
 
-| Model | Role |
-|-------|------|
-| `qwen3:8b` | Main reasoning, research, tool calling |
-| `qwen3:4b` | Fast classification, bulk operations |
-| `moondream` | Photo understanding (vision) |
-| `nomic-embed-text` | Embeddings for semantic search |
+| Model | Class | Role |
+|-------|-------|------|
+| `qwen3:8b` | thinking | Reasoning, research, analysis, orchestration |
+| `qwen3:4b` | fast | Mechanical classification, bulk file operations |
+| `moondream` | vision | Photo understanding |
+| `nomic-embed-text` | embedding | Semantic search over notes/docs |
+
+Only one model is resident at a time — Ollama unloads an idle model after ~5 min.
+On CPU, expect ~14 tok/s for the 4B model; the thinking model trades speed for quality,
+which is why mechanical work is delegated to the fast model.
 
 ## Testing
 
