@@ -1,0 +1,89 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "ollama/qwen3:8b",
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/ollama",
+      "options": {
+        "baseURL": "http://localhost:11434/api"
+      },
+      "models": {
+        "qwen3:8b": {
+          "name": "Qwen3 8B (main)"
+        },
+        "qwen3:4b": {
+          "name": "Qwen3 4B (fast)"
+        },
+        "moondream": {
+          "name": "Moondream (vision)"
+        },
+        "nomic-embed-text": {
+          "name": "Nomic Embed (search)"
+        }
+      }
+    }
+  },
+  "permission": {
+    "bash": {
+      "*": "ask",
+      "ls *": "allow",
+      "find *": "allow",
+      "fd *": "allow",
+      "cat *": "allow",
+      "head *": "allow",
+      "tail *": "allow",
+      "wc *": "allow",
+      "file *": "allow",
+      "exiftool *": "allow",
+      "ffprobe *": "allow",
+      "stat *": "allow",
+      "pwd": "allow",
+      "which *": "allow",
+      "echo *": "allow",
+      "git status*": "allow",
+      "git diff*": "allow",
+      "git log*": "allow",
+      "git *": "ask",
+      "mkdir *": "ask",
+      "cp *": "ask",
+      "mv *": "ask",
+      "rm *": "ask",
+      "fdupes *": "ask",
+      "ollama list": "allow",
+      "curl http://localhost:*": "allow"
+    },
+    "edit": "ask",
+    "webfetch": "allow",
+    "websearch": "allow",
+    "external_directory": {
+      "*": "ask",
+      "~/*": "ask"
+    }
+  },
+  "mcp": {
+    "notion": {
+      "type": "local",
+      "enabled": false,
+      "command": [
+        "npx", "-y", "@notionhq/notion-mcp-server"
+      ],
+      "environment": [
+        "NOTION_API_KEY="
+      ],
+      "environmentPaths": {
+        "NOTION_API_KEY": "~/.config/local-ai/notion.env"
+      }
+    },
+    "gmail": {
+      "type": "local",
+      "enabled": false,
+      "command": [
+        "npx", "-y", "@gongrzhe/server-gmail-autoauth-mcp"
+      ],
+      "environmentPaths": {
+        "GMAIL_CREDENTIALS_PATH": "~/.config/local-ai/gmail/credentials.json",
+        "GMAIL_TOKEN_PATH": "~/.config/local-ai/gmail/token.json"
+      }
+    }
+  }
+}

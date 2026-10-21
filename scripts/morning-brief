@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Morning briefing: email summary + today's notes + portfolio snapshot.
+# Usage: morning-brief
+set -euo pipefail
+
+exec opencode run \
+  --model ollama/qwen3:8b \
+  --mode build \
+  "Morning briefing. Produce a concise report in this order:
+
+1. EMAIL — via the Gmail MCP tool: list unread from the last 24h, group into
+   [action needed] / [fyi] / [noise], one line each. If Gmail MCP is not
+   configured, say so and skip.
+2. NOTES — look in \$OBSIDIAN_VAULT (default ~/Obsidian/Vault):
+   - list files in 'Daily Notes/' modified in the last 2 days
+   - extract open tasks / TODOs from them
+   If the vault path doesn't exist, say so and skip.
+3. PORTFOLIO — if ~/Finance/portfolio.csv exists, run:
+   ~/Projects/ai-assistant/scripts/portfolio-report
+   and include only the summary lines. Otherwise skip.
+4. FILES — run: ls -lt ~/Downloads | head -15
+   Flag anything older than 7 days that still looks unsorted.
+
+Format: markdown, max ~30 lines total. End with 'Top 3 priorities today'
+(3 bullets derived from email + notes)."

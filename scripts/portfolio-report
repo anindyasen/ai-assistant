@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Generate a portfolio report from ~/Finance/portfolio.csv using live market data.
+# Usage: portfolio-report
+set -euo pipefail
+
+CSV="$HOME/Finance/portfolio.csv"
+REPORT_DIR="$HOME/Finance/reports"
+STAMP="$(date +%Y-%m-%d)"
+
+if [ ! -f "$CSV" ]; then
+  echo "Missing $CSV — see PREREQUISITES.md step 8 for the expected format." >&2
+  exit 1
+fi
+
+mkdir -p "$REPORT_DIR"
+
+exec opencode run \
+  --model ollama/qwen3:8b \
+  --mode build \
+  "Portfolio analysis. Input: $CSV (columns: symbol,qty,avg_price).
+
+Steps:
+1. Read the CSV with python/pandas.
+2. Fetch current INR prices for each symbol using python yfinance (append .NS for NSE symbols, e.g. RELIANCE.NS). If a symbol fails, try without suffix; if still failing, mark price as N/A.
+3. Compute per-holding: current value, invested value, P&L absolute and %, weight of portfolio.
+4. Compute totals: overall P&L, portfolio value, sector/industry allocation (yfinance info).
+5. Benchmarks: fetch ^NSEI (Nifty 50) and ^BSESN (Sensex) 1-month and 1-year returns for comparison.
+6. Flags to call out:
+   - any holding down more than 15% from avg_price
+   - any single position > 25% of portfolio (concentration)
+   - cash/holding count summary
+7. Write the full markdown report to: $REPORT_DIR/$STAMP.md
+8. Print a short console summary (top 3 gainers, top 3 losers, total P&L, flags).
+
+Use the websearch tool only if yfinance fails for a symbol."

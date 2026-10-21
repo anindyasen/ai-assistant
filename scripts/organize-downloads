@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Sort ~/Downloads (or given dir) into logical destinations.
+# Usage: organize-downloads [directory] [--dry-run]
+set -euo pipefail
+
+TARGET="${1:-$HOME/Downloads}"
+shift || true
+EXTRA_ARGS="$*"
+
+if [ ! -d "$TARGET" ]; then
+  echo "Not a directory: $TARGET" >&2
+  exit 1
+fi
+
+exec opencode run \
+  --model ollama/qwen3:4b \
+  --mode build \
+  "Sort files in: $TARGET $EXTRA_ARGS
+
+Destinations:
+- Documents (pdf, docx, odt, txt, md)  -> ~/Documents/sorted/
+- Images (png, jpg, svg, gif, webp)    -> ~/Pictures/sorted/
+- Installers (AppImage, deb, run, msi) -> ~/Applications/
+- Archives (zip, tar, 7z)              -> ~/Downloads/archives/  (extract only if asked)
+- Code / data (py, js, json, csv, ipynb)-> ~/Projects/downloads/
+- Media (mp4, mkv, mp3, flac)          -> ~/Media/sorted/
+- Unknown                              -> ~/Downloads/unsorted/
+
+Rules:
+1. Use file(1) to confirm type when extension is missing or misleading.
+2. For PDFs, read the first page and rename to a meaningful name.
+3. Never delete. Skip files modified in the last 24h.
+4. Print a summary of what moved where."

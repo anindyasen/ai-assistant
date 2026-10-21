@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Organize music into Artist/Album/Track using ffprobe metadata.
+# Usage: organize-music [directory] [--dry-run]
+set -euo pipefail
+
+TARGET="${1:-$HOME/Music}"
+shift || true
+EXTRA_ARGS="$*"
+
+if [ ! -d "$TARGET" ]; then
+  echo "Not a directory: $TARGET" >&2
+  exit 1
+fi
+
+exec opencode run \
+  --model ollama/qwen3:4b \
+  --mode build \
+  "Organize music in: $TARGET $EXTRA_ARGS
+
+Steps:
+1. Scan audio files (mp3, flac, m4a, ogg, wav) with ffprobe to read artist/album/track/date/genre.
+2. Build target structure: <Artist>/<Album (Year)>/<TrackNo - Title>.<ext>
+3. Files missing tags: leave in place, list them at the end for manual review (you may research online via websearch if the filename clearly contains artist/title).
+4. Duplicates: hash audio content (md5 of first+last 256KB) and move dupes to _duplicates/.
+5. Never delete. Print summary."

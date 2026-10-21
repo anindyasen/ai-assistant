@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Organize photos: date-based folders, vision tagging, duplicate removal.
+# Usage: organize-photos /path/to/photos [--dry-run]
+set -euo pipefail
+
+TARGET="${1:?Usage: organize-photos <directory> [--dry-run]}"
+shift || true
+EXTRA_ARGS="$*"
+
+if [ ! -d "$TARGET" ]; then
+  echo "Not a directory: $TARGET" >&2
+  exit 1
+fi
+
+exec opencode run \
+  --model ollama/qwen3:4b \
+  --mode build \
+  "Organize photos in: $TARGET $EXTRA_ARGS
+
+Steps:
+1. Inventory: find all image files (jpg, jpeg, png, heic, raw, tiff). List count and date range using exiftool.
+2. Structure: create YYYY/MM folders from DateTimeOriginal (fall back to file mtime if no EXIF date) and move files in.
+3. Duplicates: run fdupes -r on the tree; move duplicates to _duplicates/ (do NOT delete).
+4. Vision pass: for images without meaningful names, use the moondream model (ollama run moondream) to describe the image in <=5 keywords, then rename file to YYYY-MM-DD-keywords.NNN.ext.
+5. Report: print a summary table (moved / renamed / flagged duplicates / errors).
+
+Rules: never delete anything; ask before moving files out of the target directory."

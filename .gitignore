@@ -1,0 +1,22 @@
+# Secrets — never commit
+*.env
+!*.env.example
+config/mcp/*.env
+!config/mcp/*.env.example
+
+credentials.json
+token.json
+*.pem
+*.key
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Local overrides
+config/opencode.local.json
+
+# Test artifacts (functional tests write here)
+tests/fixtures/**/__output/
